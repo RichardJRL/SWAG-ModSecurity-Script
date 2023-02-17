@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# ModSecurity Build
+
 # Create link that apk needs to find the persistent local package cache dir
 # https://wiki.alpinelinux.org/wiki/Local_APK_cache
 # Not sure if this is needed or whether the persistent volume /etc/apk/cache created in docker compose will automatically be used
@@ -7,51 +9,68 @@
 # TODO: read it!
 # docker exec alpine-freepbx ln -s /apk-cache /etc/apk/cache
 
-# Install dpendencies
+# Install tooling required to build ModSecurity
+apk add autoconf automake build-base ca-certificates gcc git libtool linux-headers pkgconf valgrind wget
+# Install dependencies of ModSecurity
+apk add afl++ bison curl curl-dev flex gawk geoip-dev libpcrecpp libxml2 libxml2-dev lmdb-dev lua5.3-dev openssl-dev pcre-dev yajl yajl-dev zlib zlib-dev
+# Install tooling required for generating documentation for ModSecurity
+# apk add doxygen 
+
+# Gleaned from the Linode instructions for compiling ModSecurity for Ubuntu 18.04 but AFAIK not needed here (no errors in ./build.sh  nor ./configure) 
+# iputils   : apk comment: IP Configuration Utilities (and Ping)
+#           : URL: https://github.com/iputils/iputils/
+#           : Official description: The iputils package is set of small useful utilities for Linux networking.
+#           : TODO: Check if this is installed by default on alpine.
+#           : ANSWER: No, it is not
+# expat-dev : apk comment: XML Parser library written in C
+#           : URL: https://libexpat.github.io
+#           : Official description:  A stream-oriented XML parser library written in C.
+#           : Expat excels with files too large to fit RAM, and where performance and flexibility are crucial.
+#           : TODO: Test whether expat, expat-dev can be used INSTEAD of libxml2, libxml2-dev
+# libpcrecpp    : apk comment: C++ bindings for PCRE
+#               : URL: https://www.pcre.org/
+#               : TODO: Check if installed by default before running this script
+# musl-locales  : apk comment: Locales support for musl
+# libxslt   : apk comment: XML stylesheet transformation library
+#           : URL: http://xmlsoft.org/XSLT/
+#           : TODO: Check if installed by default before running this script
+#           : ANSWER: libxslt is installed now, libxslt-dev is not.
+# libgd     : apk comment: Library for the dynamic creation of images by programmers (libraries)
+#           : URL: https://libgd.github.io/
+#           : TODO: Check if installed by default before running this script
+            # ANSWER: Installed now but...
+
 # Dependency list from https://www.linode.com/docs/guides/securing-nginx-with-modsecurity/
 # Dependencies originally for Ubuntu 18.04
-apk add autoconf automake build-base ca-certificates gcc git libtool linux-headers lua5.3-dev pkgconf valgrind 
-apk add afl++ bison curl curl-dev flex gawk geoip-dev lmdb-dev libxml2 libxml2-dev openssl-dev pcre-dev yajl yajl-dev zlib zlib-dev
-# apk add bison iputils expat-dev
-# # missing libpcrec++-dev
-# apk add musl-locales wget libxslt libgd
-# OPTIONAL (for generating documentation only)
-# apk add doxygen
-
-
 # list of Alpine dependencies and their Ubuntu 18.04 equivalents 
-    # bison \ # ok
-    # build-base \ # build-essential: build-base
-    # ca-certificates \ # ok
-    # curl \ # ok
-    # autoconf \ # dh-autoreconf: autoconf
-    # doxygen \ # ok
-    # flex \ # ok
-    # gawk \ # ok
-    # iputils \ # iputils-ping: iputils
-    # curl-dev \ # libcurl4-gnutls-dev: curl-dev AND MAYBE gnutls-dev
-    # expat-dev \ # libexpat1-dev: expat-dev
-    # geoip-dev \ # libgeoip-dev: geoip-dev
-    # lmdb-dev \ # liblmdb-dev: lmdb-dev
-    # pcre2-dev \ # libpcre3-dev (8.44): pcre-dev (8.45) OR pcre2-dev (10.42) (first try with pcre2-dev as the 8.X versions are EOL. NO it wants **pcre-dev**, tested.) (in Debian/Ubuntu, libpcre2... is newer than libpcre3...)
-    # \ # libpcre++-dev \ # libpcre++-dev: UNKNOWN
-    # openssl-dev \ # libssl-dev (OpenSSL project): 
-    # libtool \ # ok
-    # libxml2 \ # ok
-    # libxml2-dev \ # ok
-    # yajl-dev \ # libyajl-dev: yajl-dev
-    # musl-locales \ # locales: musl-locales
-    # lua5.3-dev \ # ok
-    # pkgconf \ # pkg-config: pkgconf
-    # wget \ # ok
-    # zlib-dev \ # zlib1g-dev: zlib-dev (NB: see also zlib-ng (new gen) vs zlib1g (first gen))
-    # zlib \ # zlibc: zlib NB: unsure of the relationship between zlib and zlibc
-    # libxslt \ # ok
-    # libgd-dev # libgd-dev: libgd
-
-# Install tools
-# apk add \
-#     git # ok
+# bison \ # ok
+# build-base \ # build-essential: build-base
+# ca-certificates \ # ok
+# curl \ # ok
+# autoconf \ # dh-autoreconf: autoconf
+# doxygen \ # ok
+# flex \ # ok
+# gawk \ # ok
+# iputils \ # iputils-ping: iputils
+# curl-dev \ # libcurl4-gnutls-dev: curl-dev AND MAYBE gnutls-dev
+# expat-dev \ # libexpat1-dev: expat-dev
+# geoip-dev \ # libgeoip-dev: geoip-dev
+# lmdb-dev \ # liblmdb-dev: lmdb-dev
+# pcre2-dev \ # libpcre3-dev (8.44): pcre-dev (8.45) OR pcre2-dev (10.42) (first try with pcre2-dev as the 8.X versions are EOL. NO it wants **pcre-dev**, tested.) (in Debian/Ubuntu, libpcre2... is newer than libpcre3...)
+# libpcre++-dev \ # libpcre++-dev: libpcrecpp
+# openssl-dev \ # libssl-dev (OpenSSL project): 
+# libtool \ # ok
+# libxml2 \ # ok
+# libxml2-dev \ # ok
+# yajl-dev \ # libyajl-dev: yajl-dev
+# musl-locales \ # locales: musl-locales
+# lua5.3-dev \ # ok
+# pkgconf \ # pkg-config: pkgconf
+# wget \ # ok
+# zlib-dev \ # zlib1g-dev: zlib-dev (NB: see also zlib-ng (new gen) vs zlib1g (first gen))
+# zlib \ # zlibc: zlib NB: unsure of the relationship between zlib and zlibc
+# libxslt \ # ok
+# libgd-dev # libgd-dev: libgd
 
 # Get the ModSecurity git repository
 cd /opt
@@ -96,3 +115,21 @@ git submodule init
 git submodule update
 ./configure
 make -j $(grep -m 1 siblings /proc/cpuinfo | awk -F ':' '{print $2}')
+
+
+# ModSecurity Connector Build
+
+cd /opt
+git clone https://github.com/SpiderLabs/ModSecurity-nginx
+
+# NB: nginx version number is output to STDERR not STDOUT
+cd /opt
+NGINX_VERSION=nginx-$(nginx -v 2> >(awk -F '/' '{ print $2 }'))
+wget "http://nginx.org/download/$NGINX_VERSION.tar.gz"
+tar -xvzmf "$NGINX_VERSION.tar.gz"
+cd "$NGINX_VERSION"
+
+NGINX_CONFIGURATION_ARGS=$(nginx -V 2> >(sed -n 's/configure arguments: //p'))
+./configure --add-dynamic-module=../ModSecurity-nginx "$NGINX_CONFIGURATION_ARGS"
+make modules
+mkdir /etc/nginx/modules
