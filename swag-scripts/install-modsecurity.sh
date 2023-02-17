@@ -1,13 +1,29 @@
 #!/bin/bash
 
-# ModSecurity Build
+################################################################################
+# apk package cache information
+################################################################################
 
-# Create link that apk needs to find the persistent local package cache dir
+# Create a persistant local cache of apk packages to speed-up testing of
+# ModSecurity compilation inside the LinuxServer.io SWAG secure reverse proxy
+# docker container.
+# For docker compose, the persistent volume `- ./apk-cache:/etc/apk/cache` 
+# created in docker-compose.yml is automatically used for cached packages.
+
+# Other information regarding apk package caching:
+
 # https://wiki.alpinelinux.org/wiki/Local_APK_cache
-# Not sure if this is needed or whether the persistent volume /etc/apk/cache created in docker compose will automatically be used
-# Also Alpine has a script `setup-apkcache` that can be used to enable the cache but I'm not sure if it's anything more than an ln command
-# TODO: read it!
-# docker exec alpine-freepbx ln -s /apk-cache /etc/apk/cache
+
+# Alpine has a script `setup-apkcache` that can be used to enable the cache but
+# a) it's not included in the SWAG container
+# b) I'm not sure if it's anything more than an ln command (I need to read it)
+
+# Manually create a link to a persistent local package cache dir:
+# ln -s /apk-cache /etc/apk/cache
+
+################################################################################
+# Build ModSecurity inside LinuxServer.io's SWAG HTTPS Reverse Proxy container
+################################################################################
 
 # Install tooling required to build ModSecurity
 apk add autoconf automake build-base ca-certificates gcc git libtool linux-headers pkgconf valgrind wget
