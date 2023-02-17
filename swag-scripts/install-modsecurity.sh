@@ -96,14 +96,17 @@ cd /opt
 git clone https://github.com/SpiderLabs/ModSecurity
 cd ./ModSecurity
 
+# Inititalise the ModSecurity git submodule
+git submodule init
+git submodule update
+
+# Pre-build checks etc.
 ./build.sh
 ./configure
-# Configure messages of note:
+
+# ##Configure output of note:
 # configure: LMDB is disabled by default.
-# configure: SSDEEP library was not found
 # checking if libcurl is linked with gnutls... no
-# configure: Nothing about PCRE2 was informed during the configure phase. Trying to detect it on the platform...
-# configure: PCRE2 is disabled by default.
 # checking for string... no
 # checking for iostream... no
 # checking for dlltool... no
@@ -115,11 +118,8 @@ cd ./ModSecurity
 # checking for shl_load... no
 # checking for shl_load in -ldld... no
 # checking whether a statically linked program can dlopen itself... no
-# checking for doxygen... no
-# configure: WARNING: doxygen not found - will not generate any doxygen documentation
-# checking for valgrind... no
+
 #    + LMDB                                          ....disabled
-#    + SSDEEP                                        ....not found
 #    + PCRE2                                          ....disabled
 #    + afl fuzzer                                    ....disabled
 #    + Building parser                               ....disabled
@@ -139,10 +139,7 @@ cd ./ModSecurity
 # SSDEEP    : Not found despite ssdeep and ssdeep-static being installed.
 #           : It requires libfuzzy2-dev instead - which appears to be an alternative & preferred implementation.
 
-# Inititalise the ModSecurity git submodule
-git submodule init
-git submodule update
-./configure
+# Build on all CPU threads
 make -j $(grep -m 1 siblings /proc/cpuinfo | awk -F ':' '{print $2}')
 
 ################################################################################
