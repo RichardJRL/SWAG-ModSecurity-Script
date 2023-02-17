@@ -102,7 +102,8 @@ git submodule update
 
 # Pre-build checks etc.
 ./build.sh
-./configure
+./configure --enable-afl-fuzz --enable-valgrind --with-gnu-ld=yes
+# There was an issue compiling asterisk or one/some of its dependencies on alpine without --with-gnu-ld... I can't remember exactly what
 
 # ##Configure output of note:
 # configure: LMDB is disabled by default.
@@ -130,7 +131,7 @@ git submodule update
 # afl fuzzer: apk comment: Fuzzer relying on genetic algorithms instead of brute force
 #           : No mention of this in alipine's nginx -V configure options.
 #           : No mention of this in the compilation recipes page on the ModSecurity Wiki
-#           : I don't know what it is or why or where it is disabled.
+#           : It is enabled with a configure option `--enable-afl-fuzz`
 # lmdb      : apk comment: Lightning Memory-Mapped Database
 #           : Centos, Amazon & Ubuntu compilation recipies on the ModSecurity wiki all use this.
 #           : It isn't mentioned in the nginx -V configure options
