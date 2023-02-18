@@ -26,9 +26,15 @@
 ################################################################################
 
 # Install tooling required to build ModSecurity
-apk add autoconf automake build-base ca-certificates gcc git libtool linux-headers pkgconf valgrind wget
+apk add autoconf automake build-base ca-certificates gcc git libtool linux-headers pkgconf wget
 # Install dependencies of ModSecurity
-apk add afl++ bison curl curl-dev flex gawk geoip-dev libfuzzy2 libfuzzy2-dev libpcrecpp libxml2 libxml2-dev libxslt libxslt-dev lmdb lmdb-dev lua5.3-dev openssl-dev pcre-dev yajl yajl-dev zlib zlib-dev
+apk add bison curl curl-dev flex gawk geoip-dev libfuzzy2 libfuzzy2-dev libpcrecpp libxml2 libxml2-dev libxslt libxslt-dev lmdb lmdb-dev lua5.3-dev openssl-dev pcre-dev yajl yajl-dev zlib zlib-dev
+# OPTIONAL: Install dependencies of ModSecurity with American Fuzzy Lop plus plus (afl++) support (NB: also MUST subsequently ./configure with the --enable-afl-fuzz option)
+apk add afl++ compiler-rt # llvm15-dev <<< TODO: Test without llvm15-dev virst
+export CXX=afl-clang-fast++ 
+export CC=afl-clang-fast 
+# OPTIONAL: Compile with valgrind support (NB: also MUST subsequently ./configure with the --enable-valgrind option)
+apk add valgrind
 # OPTIONAL: Install tooling required for generating documentation for ModSecurity
 # apk add doxygen 
 
@@ -102,8 +108,7 @@ git submodule update
 
 # Pre-build checks etc.
 ./build.sh
-./configure --enable-afl-fuzz --enable-valgrind --with-gnu-ld=yes
-# There was an issue compiling asterisk or one/some of its dependencies on alpine without --with-gnu-ld... I can't remember exactly what
+./configure --enable-afl-fuzz --enable-valgrind
 
 # ##Configure output of note:
 # configure: LMDB is disabled by default.
@@ -131,12 +136,29 @@ git submodule update
 # afl fuzzer: apk comment: Fuzzer relying on genetic algorithms instead of brute force
 #           : No mention of this in alipine's nginx -V configure options.
 #           : No mention of this in the compilation recipes page on the ModSecurity Wiki
-#           : It is enabled with a configure option `--enable-afl-fuzz`
+#           : It is enabled with a configure option `--enable-afl-fuzz`, 
+#           : after doing so, the following warning appears at the end of the ./configure output:
+#           : WARNING: afl fuzzer was enabled. Make sure you are using the
+#           : 'afl-clang-fast' as the compiler, otherwise the compilation
+#           : will fail.
+#           : You can set the compiler using:
+#           : $ export CXX=afl-clang-fast++ 
+#           : $ export CC=afl-clang-fast 
+#           : It also needs the packages llvm15-dev, compiler-rt, (clang15-static), (clang15-libclang), (llvm15-static) installed for the environment variables above to work
+#           : Compilation fails as it cannot find /usr/lib/clang/15.0.7/lib/linux/libclang_rt.asan_static-x86_64.a
+#           : The packages in brackets above were installed to try to fix the error, but to no avail. I have all clang15/llvm15 packages installed and it still won't work.
+#           : Also see https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.llvm.md
+#           : for information on setting the LLVM_CONFIG environment variable.
+#           : I'm having problems setting the CC CXX CFLAGS CXXFLAGS LDFLAGS environment variables (stop the make command just after executing to see options that made it!)
+#           : https://bugzilla.redhat.com/show_bug.cgi?id=949489 describes the missing libclang_rt.asan_static-x86_64.a as a bug in Red Hat, suggests installing compiler-rt package. IT WORKED!
+
 # lmdb      : apk comment: Lightning Memory-Mapped Database
-#           : Centos, Amazon & Ubuntu compilation recipies on the ModSecurity wiki all use this.
+#           : Centos, Amazon & Ubuntu compilation recipes on the ModSecurity wiki all use this.
 #           : It isn't mentioned in the nginx -V configure options
 #           : Appears disabled by default despite lmdb and lmdb-dev being installed
+
 # pcre2     : pcre2 support is specifically disabled in alpine's nginx configure options, uses pcre instead
+
 # SSDEEP    : Not found despite ssdeep and ssdeep-static being installed.
 #           : It requires libfuzzy2-dev instead - which appears to be an alternative & preferred implementation.
 
