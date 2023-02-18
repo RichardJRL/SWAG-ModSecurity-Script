@@ -179,5 +179,17 @@ cd "$NGINX_VERSION"
 
 NGINX_CONFIGURATION_ARGS=$(nginx -V 2> >(sed -n 's/configure arguments: //p'))
 ./configure --add-dynamic-module=../ModSecurity-nginx "$NGINX_CONFIGURATION_ARGS"
+
+## Choice lines from ./configure output
+# dirname: unrecognized option '--sbin-path=/usr/sbin/nginx'
+# Try 'dirname --help' for more information.
+# dirname: unrecognized option '--sbin-path=/usr/sbin/nginx'
+# Try 'dirname --help' for more information.
+# Configuration summary
+#   + using system PCRE library
+#   + OpenSSL library is not used
+#   + using system zlib library
+
 make modules
-mkdir /etc/nginx/modules
+mkdir -p /etc/nginx/modules
+cp objs/ngx_http_modsecurity_module.so /etc/nginx/modules
