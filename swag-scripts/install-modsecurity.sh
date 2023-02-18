@@ -29,11 +29,13 @@
 apk add autoconf automake build-base ca-certificates gcc git libtool linux-headers pkgconf wget
 # Install dependencies of ModSecurity
 apk add bison curl curl-dev flex gawk geoip-dev libfuzzy2 libfuzzy2-dev libpcrecpp libxml2 libxml2-dev libxslt libxslt-dev lmdb lmdb-dev lua5.3-dev openssl-dev pcre-dev yajl yajl-dev zlib zlib-dev
-# OPTIONAL: Install dependencies of ModSecurity with American Fuzzy Lop plus plus (afl++) support (NB: also MUST subsequently ./configure with the --enable-afl-fuzz option)
-apk add afl++ compiler-rt # llvm15-dev <<< TODO: Test without llvm15-dev virst
+# OPTIONAL: Install dependencies of ModSecurity with American Fuzzy Lop plus plus (afl++) support
+#         : NB: also MUST subsequently ./configure with the --enable-afl-fuzz option
+apk add afl++ compiler-rt
 export CXX=afl-clang-fast++ 
 export CC=afl-clang-fast 
-# OPTIONAL: Compile with valgrind support (NB: also MUST subsequently ./configure with the --enable-valgrind option)
+# OPTIONAL: Compile with valgrind support
+#         : NB: also MUST subsequently ./configure with the --enable-valgrind option
 apk add valgrind
 # OPTIONAL: Install tooling required for generating documentation for ModSecurity
 # apk add doxygen 
@@ -127,7 +129,6 @@ git submodule update
 
 #    + LMDB                                          ....disabled
 #    + PCRE2                                          ....disabled
-#    + afl fuzzer                                    ....disabled
 #    + Building parser                               ....disabled
 #    + Treating pm operations as critical section    ....disabled
 
@@ -144,13 +145,10 @@ git submodule update
 #           : You can set the compiler using:
 #           : $ export CXX=afl-clang-fast++ 
 #           : $ export CC=afl-clang-fast 
-#           : It also needs the packages llvm15-dev, compiler-rt, (clang15-static), (clang15-libclang), (llvm15-static) installed for the environment variables above to work
-#           : Compilation fails as it cannot find /usr/lib/clang/15.0.7/lib/linux/libclang_rt.asan_static-x86_64.a
-#           : The packages in brackets above were installed to try to fix the error, but to no avail. I have all clang15/llvm15 packages installed and it still won't work.
-#           : Also see https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.llvm.md
-#           : for information on setting the LLVM_CONFIG environment variable.
-#           : I'm having problems setting the CC CXX CFLAGS CXXFLAGS LDFLAGS environment variables (stop the make command just after executing to see options that made it!)
+#           : It also needs the package compiler-rt installed otherwise compilation fails as it cannot find
+#           : the file /usr/lib/clang/15.0.7/lib/linux/libclang_rt.asan_static-x86_64.a . Found it thanks to:
 #           : https://bugzilla.redhat.com/show_bug.cgi?id=949489 describes the missing libclang_rt.asan_static-x86_64.a as a bug in Red Hat, suggests installing compiler-rt package. IT WORKED!
+#           : Also see https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.llvm.md
 
 # lmdb      : apk comment: Lightning Memory-Mapped Database
 #           : Centos, Amazon & Ubuntu compilation recipes on the ModSecurity wiki all use this.
