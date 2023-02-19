@@ -164,7 +164,7 @@ git submodule update
 make -j $(grep -m 1 siblings /proc/cpuinfo | awk -F ':' '{print $2}')
 
 ################################################################################
-# ModSecurity Connector Build
+# Nginx Connector for ModSecurity - Dynamic Module Build
 ################################################################################
 
 cd /opt
@@ -192,4 +192,16 @@ NGINX_CONFIGURATION_ARGS=$(nginx -V 2> >(sed -n 's/configure arguments: //p'))
 
 make modules
 mkdir -p /etc/nginx/modules
-cp objs/ngx_http_modsecurity_module.so /etc/nginx/modules
+# cp objs/ngx_http_modsecurity_module.so /etc/nginx/modules
+# In the swag container, the path to existing nginx modules is /usr/lib/nginx/modules/
+# In the swag container /etc/nginx/modules contains only numbered .conf files which
+# are one-liners that serve to load the nginx module from the /usr/lib/nginx/modules/ directory
+# e.g. load_module "modules/ngx_http_perl_module.so";
+cp objs/ngx_http_modsecurity_module.so /usr/lib/nginx/modules/
+echo 'load_module "modules/ngx_http_modsecurity_module.so";' > 10_http_modsecurity.conf
+# TODO: Check for a modules-enabled directory...
+
+################################################################################
+# Install the OWASP Core Rule Set for ModSecurity
+################################################################################
+
