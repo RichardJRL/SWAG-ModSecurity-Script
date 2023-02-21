@@ -105,7 +105,7 @@ apk add doxygen
 
 # Get the ModSecurity git repository
 cd /opt
-git clone https://github.com/SpiderLabs/ModSecurity
+git clone --depth=1 https://github.com/SpiderLabs/ModSecurity
 cd ./ModSecurity
 
 # Inititalise the ModSecurity git submodule
@@ -175,7 +175,7 @@ make install
 ################################################################################
 
 cd /opt
-git clone https://github.com/SpiderLabs/ModSecurity-nginx
+git clone --depth=1 https://github.com/SpiderLabs/ModSecurity-nginx
 
 # NB: nginx version number is output to STDERR not STDOUT
 NGINX_VERSION=nginx-$(nginx -v 2> >(awk -F '/' '{ print $2 }'))
@@ -212,7 +212,7 @@ echo 'load_module "modules/ngx_http_modsecurity_module.so";' > /etc/nginx/module
 ################################################################################
 
 cd /usr/local
-git clone https://github.com/coreruleset/coreruleset /usr/local/modsecurity-crs
+git clone --depth=1 https://github.com/coreruleset/coreruleset /usr/local/modsecurity-crs
 cd /usr/local/modsecurity-crs/
 
 mkdir -p /config/nginx/modsecurity-crs
@@ -267,7 +267,7 @@ for plugin in "${RULE_EXCLUSION_PLUGINS[@]}"
 do
     plugin=$plugin-rule-exclusions
     mkdir -p "/usr/local/modsecurity-crs-plugins/$plugin-plugin"
-    git clone "https://github.com/coreruleset/$plugin-plugin.git" "/usr/local/modsecurity-crs-plugins/$plugin-plugin"
+    git clone --depth=1 "https://github.com/coreruleset/$plugin-plugin.git" "/usr/local/modsecurity-crs-plugins/$plugin-plugin"
     cd "/usr/local/modsecurity-crs-plugins/$plugin-plugin/plugins"
     for file in ./*
     do
@@ -286,7 +286,7 @@ GENERAL_PLUGINS=('body-decompress' 'fake-bot' 'auto-decoding' 'antivirus' 'googl
 for plugin in "${GENERAL_PLUGINS[@]}"
 do
     mkdir -p "/usr/local/modsecurity-crs-plugins/$plugin-plugin"
-    git clone "https://github.com/coreruleset/$plugin-plugin.git" "/usr/local/modsecurity-crs-plugins/$plugin-plugin"
+    git clone --depth=1 "https://github.com/coreruleset/$plugin-plugin.git" "/usr/local/modsecurity-crs-plugins/$plugin-plugin"
     cd "/usr/local/modsecurity-crs-plugins/$plugin-plugin/plugins"
     for file in ./*
     do
