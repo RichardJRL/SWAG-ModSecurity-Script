@@ -42,7 +42,7 @@ apk add bison curl curl-dev flex gawk geoip-dev libfuzzy2 libfuzzy2-dev libpcrec
 # apk add valgrind
 
 # OPTIONAL: Install tooling required for generating documentation for ModSecurity
-# apk add doxygen 
+apk add doxygen 
 
 # Gleaned from the Linode instructions for compiling ModSecurity for Ubuntu 18.04 but AFAIK not needed here (no errors in ./build.sh  nor ./configure) 
 # iputils   : apk comment: IP Configuration Utilities (and Ping)
@@ -204,7 +204,7 @@ mkdir -p /etc/nginx/modules
 # are one-liners that serve to load the nginx module from the /usr/lib/nginx/modules/ directory
 # e.g. load_module "modules/ngx_http_perl_module.so";
 cp objs/ngx_http_modsecurity_module.so /usr/lib/nginx/modules/
-echo 'load_module "modules/ngx_http_modsecurity_module.so";' > 10_http_modsecurity.conf
+echo 'load_module "modules/ngx_http_modsecurity_module.so";' > /etc/nginx/modules/10_http_modsecurity.conf
 # TODO: Check for a modules-enabled directory...
 
 ################################################################################
@@ -302,7 +302,7 @@ cd /usr/local/modsecurity-crs-plugins
 
 mkdir -p /config/nginx/modsecurity
 
-cp /opt/ModSecurity/unicode.mapping /config/nginx/modsecurity
+cp /opt/ModSecurity/unicode.mapping /config/nginx/modsecurity/
 
 # Always copy the recommended conf file to the SWAG persistant storage directory
 cp /opt/ModSecurity/modsecurity.conf-recommended /config/nginx/modsecurity/modsecurity.conf.sample
@@ -316,19 +316,38 @@ if [[ ! -f /config/nginx/modsecurity.conf ]]; then
     cp /config/nginx/modsecurity/modsecurity.conf.sample /config/nginx/modsecurity/modsecurity.conf
 fi
 
-# There are multiple approaches to adding ModSecurity to nginx...
-# The CRS guide   
+# Add the ModSecurity and ModSecurity-CRS conf files to a new config file
+touch /config/nginx/modsecurity/main.conf
+{
+    echo '# Include ModSecurity Web Application Firewall configuration file'
+    echo 'include /config/nginx/modsecurity/modsecurity.conf'
+    echo '# Include ModSecurity Core Rule Set configuration files'
+    echo 'include /config/nginx/modsecurity-crs/crs-setup.conf'
+    echo 'include /config/nginx/modsecurity-crs/rules/*.conf'
+    echo 'include /config/nginx/modsecurity-crs/plugins/*.conf'
+} >> /config/nginx/modsecurity/main.conf
 
-# Add the ModSecurity and ModSecurity-CRS conf files to nginx.conf.sample
-echo '' >> /config/nginx/nginx.conf
-echo '# Include ModSecurity Web Application Firewall configuration file' >> /config/nginx/nginx.conf
-echo 'include /config/nginx/modsecurity.conf' >> /config/nginx/nginx.conf
-echo '# Include ModSecurity Core Rule Set configuration files' >> /config/nginx/nginx.conf
-echo 'include /config/nginx/modsecurity-crs/crs-setup.conf' >> /config/nginx/nginx.conf
-echo 'include /config/nginx/modsecurity-crs/rules/*.conf' >> /config/nginx/nginx.conf
-echo 'include /config/nginx/modsecurity-crs/plugins/*.conf'  >> /config/nginx/nginx.conf
+# Include the relevant nginx configuration directives to turn ModSecurity on and provide a path to the rules files
+# Method from Linode tutorial, nginx blog on modescurity setup(2017), 
+# server {
+#   ...
+#   modsecurity on;
+#   modsecurity_rules_file /config/nginx/modseccurity/main.conf;
+#   ...
+# }
 
-# The Linode guide method:
+# From ModSecurity wiki Reference Manual v3, CRS docs
+# CRS docs note ModSecurityConfig must appear only once in the various nginx config files.
+# location / {
+#     ...
+#     ModSecurityEnabled on;
+#     ModSecurityConfig modsecurity.conf;
+#     ...
+# }
+
+# FFS!!!
+
+# The proxy-conf/*.sample files
 
 
 ################################################################################
