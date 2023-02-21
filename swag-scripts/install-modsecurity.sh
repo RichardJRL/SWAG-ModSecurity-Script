@@ -27,16 +27,20 @@
 
 # Install tooling required to build ModSecurity
 apk add autoconf automake build-base ca-certificates gcc git libtool linux-headers pkgconf wget
+
 # Install dependencies of ModSecurity
-apk add bison curl curl-dev flex gawk geoip-dev libfuzzy2 libfuzzy2-dev libpcrecpp libxml2 libxml2-dev libxslt libxslt-dev lmdb lmdb-dev lua5.3-dev openssl-dev pcre-dev yajl yajl-dev zlib zlib-dev
+apk add bison curl curl-dev flex gawk geoip-dev libfuzzy2 libfuzzy2-dev libpcrecpp libxml2 libxml2-dev libxslt libxslt-dev lmdb lmdb-dev lua5.3-dev lua5.3-lzlib openssl-dev pcre-dev yajl yajl-dev zlib zlib-dev
+
 # OPTIONAL: Install dependencies of ModSecurity with American Fuzzy Lop plus plus (afl++) support
 #         : NB: also MUST subsequently ./configure with the --enable-afl-fuzz option
-apk add afl++ compiler-rt
-export CXX=afl-clang-fast++ 
-export CC=afl-clang-fast 
+# apk add afl++ compiler-rt
+# export CXX=afl-clang-fast++ 
+# export CC=afl-clang-fast 
+
 # OPTIONAL: Compile with valgrind support
 #         : NB: also MUST subsequently ./configure with the --enable-valgrind option
-apk add valgrind
+# apk add valgrind
+
 # OPTIONAL: Install tooling required for generating documentation for ModSecurity
 # apk add doxygen 
 
@@ -110,7 +114,10 @@ git submodule update
 
 # Pre-build checks etc.
 ./build.sh
-./configure --enable-afl-fuzz --enable-valgrind
+./configure
+# ./configure --enable-parser-generation 
+# ./configure --enable-afl-fuzz
+# ./configure --enable-valgrind
 
 # ##Configure output of note:
 # configure: LMDB is disabled by default.
@@ -129,7 +136,6 @@ git submodule update
 
 #    + LMDB                                          ....disabled
 #    + PCRE2                                          ....disabled
-#    + Building parser                               ....disabled
 #    + Treating pm operations as critical section    ....disabled
 
 # Notes on configure output
@@ -162,6 +168,7 @@ git submodule update
 
 # Build on all CPU threads
 make -j $(grep -m 1 siblings /proc/cpuinfo | awk -F ':' '{print $2}')
+make install
 
 ################################################################################
 # Nginx Connector for ModSecurity - Dynamic Module Build
@@ -171,7 +178,6 @@ cd /opt
 git clone https://github.com/SpiderLabs/ModSecurity-nginx
 
 # NB: nginx version number is output to STDERR not STDOUT
-cd /opt
 NGINX_VERSION=nginx-$(nginx -v 2> >(awk -F '/' '{ print $2 }'))
 wget "http://nginx.org/download/$NGINX_VERSION.tar.gz"
 tar -xvzmf "$NGINX_VERSION.tar.gz"
@@ -205,3 +211,112 @@ echo 'load_module "modules/ngx_http_modsecurity_module.so";' > 10_http_modsecuri
 # Install the OWASP Core Rule Set for ModSecurity
 ################################################################################
 
+cd /usr/local
+git clone https://github.com/coreruleset/coreruleset /usr/local/modsecurity-crs
+cd /usr/local/modsecurity-crs/
+
+mkdir -p /config/nginx/modsecurity-crs
+
+# Copy default ModSecurity Rule-Set configuration file
+# TODO: Does this need to be included in the SWAG persistant storage somehow?
+cp /usr/local/modsecurity-crs/crs-setup.conf.example /config/nginx/modsecurity-crs/crs-setup.conf.example
+if [[ ! -f /config/nginx/modsecurity-crs/crs-setup.conf ]]; then
+    cp /usr/local/modsecurity-crs/crs-setup.conf.example /config/nginx/modsecurity-crs/crs-setup.conf
+fi
+
+mkdir -p /config/nginx/modsecurity-crs/rules
+cd /usr/local/modsecurity-crs/rules
+
+# Copy ALL rule conf and data files
+cp /usr/local/modsecurity-crs/rules/*.conf /config/nginx/modsecurity-crs/rules/
+cp /usr/local/modsecurity-crs/rules/*.data /config/nginx/modsecurity-crs/rules/
+
+# Create a "default exclusion rules before CRS" file if it doesn't already exist
+cp REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example /config/nginx/modsecurity-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example
+if [[ ! -f /config/nginx/modsecurity-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf ]]; then
+    cp REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example /config/nginx/modsecurity-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
+fi
+
+# Create a "default exclusion rules after CRS file" if it doesn't already exist
+cp REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example /config/nginx/modsecurity-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example
+if [[ ! -f /config/nginx/modsecurity-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf ]]; then
+    cp REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf.example /config/nginx/modsecurity-crs/rules/REQUEST-900-EXCLUSION-RULES-BEFORE-CRS.conf
+fi
+
+# Copy all plugins files (no plugins are available by default)
+
+mkdir -p /config/nginx/modsecurity-crs/plugins
+cd /usr/local/modsecurity-crs/plugins
+cp README.md /config/nginx/modsecurity-crs/plugins/
+# This trio of empty plugin conf files are required to ensure an include *.conf directive does not fail on an empty plugin directory
+touch /config/nginx/modsecurity-crs/plugins/empty-config.conf
+touch /config/nginx/modsecurity-crs/plugins/empty-before.conf
+touch /config/nginx/modsecurity-crs/plugins/empty-after.conf
+
+# NB: Rules for common applications such as Wordpress and Nextcloud are now contained 
+# in their own dedicated plugins. Install them separately when their dedicated containers 
+# are installed, or install them all now?
+# Arguments for and against.
+# Against: By no means needed now. 
+# For: SWAG's entire set of reverse proxy conf files are all installed now.
+# Suggestion: Add them all disabled with .example extensions, to mirror the .sample extensions of SWAG's proxy confs
+
+# Install the 8 rule exclusions plugins from the official Core Rule Set Project github
+RULE_EXCLUSION_PLUGINS=('wordpress' 'phpmyadmin' 'nextcloud' 'xenforo' 'phpbb' 'cpanel' 'dokuwiki' 'drupal')
+for plugin in "${RULE_EXCLUSION_PLUGINS[@]}"
+do
+    plugin=$plugin-rule-exclusions
+    mkdir -p "/usr/local/modsecurity-crs-plugins/$plugin-plugin"
+    git clone "https://github.com/coreruleset/$plugin-plugin.git" "/usr/local/modsecurity-crs-plugins/$plugin-plugin"
+    cd "/usr/local/modsecurity-crs-plugins/$plugin-plugin/plugins"
+    for file in ./*
+    do
+        cp "$file" "/config/nginx/modsecurity-crs/plugins/$file.sample"
+    done
+    # TODO: Remove git repository directory after copying to nginx?
+done
+cd /usr/local/modsecurity-crs-plugins
+
+# Install other plugins fom the official Core Rule Set Project github#
+# NB: body-decompress-plugin requires 'lua5.3-lzlib' package
+# NB: fake-bot-plugin requires 'lua5.3-socket' library
+# NB: auto-decoding-plugin has a performance impact
+# NB: antivirus-plugin requires 'lua5.3-socket' library
+GENERAL_PLUGINS=('body-decompress' 'fake-bot' 'auto-decoding' 'antivirus' 'google-oauth2')
+for plugin in "${GENERAL_PLUGINS[@]}"
+do
+    mkdir -p "/usr/local/modsecurity-crs-plugins/$plugin-plugin"
+    git clone "https://github.com/coreruleset/$plugin-plugin.git" "/usr/local/modsecurity-crs-plugins/$plugin-plugin"
+    cd "/usr/local/modsecurity-crs-plugins/$plugin-plugin/plugins"
+    for file in ./*
+    do
+        cp "$file" "/config/nginx/modsecurity-crs/plugins/$file.sample"
+    done
+    # TODO: Remove git repository directory after copying to nginx?
+done
+cd /usr/local/modsecurity-crs-plugins
+
+################################################################################
+# Configure ModSecurity
+################################################################################
+exit 
+mkdir -p /etc/nginx/modsec
+
+cp /opt/ModSecurity/unicode.mapping /etc/nginx/modsec
+
+# Always copy the recommended conf file to the SWAG persistant storage directory
+cp /opt/ModSecurity/modsecurity.conf-recommended /config/nginx/modsecurity.conf.sample
+
+# Set the default behaviour for ModSecurity in the sample configuration file to On from DetectionOnly
+# TODO: Decide whether to leave the default as 'DetectionOnly' or switch it to 'On'
+sed -i -E 's/^#? *SecRuleEngine DetectionOnly/SecRuleEngine On/' /config/nginx/modsecurity.conf.sample
+
+# Make the sample configuration file the active configuration file if one does not already exist
+if [[ ! -f /config/nginx/modsecurity.conf ]]; then
+    cp /config/nginx/modsecurity.conf.sample /config/nginx/modsecurity.conf
+fi
+
+
+################################################################################
+# Download the GeoIP Location Database 
+################################################################################
