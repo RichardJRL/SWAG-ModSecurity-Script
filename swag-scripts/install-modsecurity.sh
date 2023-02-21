@@ -297,24 +297,38 @@ done
 cd /usr/local/modsecurity-crs-plugins
 
 ################################################################################
-# Configure ModSecurity
+# Configure ModSecurity & Integrate With nginx
 ################################################################################
-exit 
-mkdir -p /etc/nginx/modsec
 
-cp /opt/ModSecurity/unicode.mapping /etc/nginx/modsec
+mkdir -p /config/nginx/modsecurity
+
+cp /opt/ModSecurity/unicode.mapping /config/nginx/modsecurity
 
 # Always copy the recommended conf file to the SWAG persistant storage directory
-cp /opt/ModSecurity/modsecurity.conf-recommended /config/nginx/modsecurity.conf.sample
+cp /opt/ModSecurity/modsecurity.conf-recommended /config/nginx/modsecurity/modsecurity.conf.sample
 
 # Set the default behaviour for ModSecurity in the sample configuration file to On from DetectionOnly
 # TODO: Decide whether to leave the default as 'DetectionOnly' or switch it to 'On'
-sed -i -E 's/^#? *SecRuleEngine DetectionOnly/SecRuleEngine On/' /config/nginx/modsecurity.conf.sample
+sed -i -E 's/^#? *SecRuleEngine DetectionOnly/SecRuleEngine On/' /config/nginx/modsecurity/modsecurity.conf.sample
 
 # Make the sample configuration file the active configuration file if one does not already exist
 if [[ ! -f /config/nginx/modsecurity.conf ]]; then
-    cp /config/nginx/modsecurity.conf.sample /config/nginx/modsecurity.conf
+    cp /config/nginx/modsecurity/modsecurity.conf.sample /config/nginx/modsecurity/modsecurity.conf
 fi
+
+# There are multiple approaches to adding ModSecurity to nginx...
+# The CRS guide   
+
+# Add the ModSecurity and ModSecurity-CRS conf files to nginx.conf.sample
+echo '' >> /config/nginx/nginx.conf
+echo '# Include ModSecurity Web Application Firewall configuration file' >> /config/nginx/nginx.conf
+echo 'include /config/nginx/modsecurity.conf' >> /config/nginx/nginx.conf
+echo '# Include ModSecurity Core Rule Set configuration files' >> /config/nginx/nginx.conf
+echo 'include /config/nginx/modsecurity-crs/crs-setup.conf' >> /config/nginx/nginx.conf
+echo 'include /config/nginx/modsecurity-crs/rules/*.conf' >> /config/nginx/nginx.conf
+echo 'include /config/nginx/modsecurity-crs/plugins/*.conf'  >> /config/nginx/nginx.conf
+
+# The Linode guide method:
 
 
 ################################################################################
