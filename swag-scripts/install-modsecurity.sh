@@ -349,24 +349,42 @@ touch /config/nginx/modsecurity/main.conf
 # server {
 #   ...
 #   modsecurity on;
-#   modsecurity_rules_file /config/nginx/modseccurity/main.conf;
+#   modsecurity_rules_file /config/nginx/modsecurity/main.conf;
 #   ...
 # }
 # Update site-confs/default.conf
+# Compare default.conf and default.conf.sample.
+# If the same, update both;
+# If different, assume user has customised default.conf and update only default.conf.sample
 cd /config/nginx/site-confs/
-sed -E -i '/include \/config\/nginx\/authentik-server/a\
-\
-    # Comment the next two lines to disable the ModSecurity firewall for the default site
-    modsecurity on;\
-    modsecurity_rules_file \/config\/nginx\/modseccurity\/main.conf;' default.conf
+default_files=('default.conf.sample')
+if cmp -s default.conf default.conf.sample
+then
+    echo "default.conf and default.conf.sample are the same"
+    default_files+=( 'default.conf' )
+fi
 
-# Update proxy-confs/*.conf.sample
-# cd /config/nginx/proxy-confs/
-# sed -E -i '/include \/config\/nginx\/authentik-server/a\
-# \
-#     # Comment the next two lines to disable the ModSecurity firewall for the default site
-#     modsecurity on;\
-#     modsecurity_rules_file \/config\/nginx\/modseccurity\/main.conf;' *.conf.sample
+for file in "${default_files[@]}"
+do
+    sed -E -i '/include \/config\/nginx\/authentik-server/a\
+    \
+    # Comment the next two lines to disable the ModSecurity firewall for the default site\
+    modsecurity on;\
+    modsecurity_rules_file \/config\/nginx\/modsecurity\/main.conf;' "$file"
+done
+
+# # Update proxy-confs/*.conf.sample
+cd /config/nginx/proxy-confs/
+for file in *.conf.sample
+do
+    service_name=$(echo $file | sed "s/\.sub.*\.conf\.sample//")
+    echo "Working on service name: $service_name"
+    sed -E -i '/include \/config\/nginx\/authentik-server/a\
+    \
+    # Comment the next two lines to disable the ModSecurity firewall for this reverse proxied service\
+    modsecurity on;\
+    modsecurity_rules_file \/config\/nginx\/modsecurity\/main.conf;' "$file"
+done
 
 # NB: This is the old syntax below. It changed to the above version, see https://github.com/SpiderLabs/ModSecurity/issues/1039
 # but it still appears in various online sources such as the ModSecurity wiki Reference Manual v3, CRS docs...
@@ -376,9 +394,6 @@ sed -E -i '/include \/config\/nginx\/authentik-server/a\
 #     ModSecurityConfig modsecurity.conf;
 #     ...
 # }
-
-# The proxy-conf/*.sample files
-
 
 ################################################################################
 # Download the GeoIP Location Database 
