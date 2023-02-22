@@ -42,7 +42,8 @@ apk add bison curl curl-dev flex gawk geoip-dev libfuzzy2 libfuzzy2-dev libpcrec
 # apk add valgrind
 
 # OPTIONAL: Install tooling required for generating documentation for ModSecurity
-apk add doxygen 
+# The 'mandoc' and 'man-db' packages are in conflict. Alpine FAQ recommends mandoc
+apk add doxygen mandoc man-apropos man-pages texlive
 
 # Gleaned from the Linode instructions for compiling ModSecurity for Ubuntu 18.04 but AFAIK not needed here (no errors in ./build.sh  nor ./configure) 
 # iputils   : apk comment: IP Configuration Utilities (and Ping)
@@ -114,7 +115,21 @@ git submodule update
 
 # Pre-build checks etc.
 ./build.sh
-./configure
+./configure --docdir=/docs \
+    --enable-doxygen-dot \
+    --enable-doxygen-man \
+    --enable-doxygen-rtf \
+    --enable-doxygen-xml \
+    --enable-doxygen-ps \
+    --enable-doxygen-pdf \
+    --docdir=/docs \
+    --infodir=/docs/info \
+    --mandir=/docs/man \
+    --htmldir=/docs/html \
+    --dvidir=/docs/dvi \
+    --pdfdir=/docs/pdf \
+    --psdir=/docs/ps
+
 # ./configure --enable-parser-generation 
 # ./configure --enable-afl-fuzz
 # ./configure --enable-valgrind
@@ -328,24 +343,39 @@ touch /config/nginx/modsecurity/main.conf
 } >> /config/nginx/modsecurity/main.conf
 
 # Include the relevant nginx configuration directives to turn ModSecurity on and provide a path to the rules files
-# Method from Linode tutorial, nginx blog on modescurity setup(2017), 
+# See: https://github.com/SpiderLabs/ModSecurity-nginx#usage
+# Both the `modsecurity` and `modsecurity_rules_file` can have `http`, `server` or `location` context in nginx conf files.
+# `server` level chosen here due to SWAG's breakdown of conf files into individual proxy-confs that operate at the server level.
 # server {
 #   ...
 #   modsecurity on;
 #   modsecurity_rules_file /config/nginx/modseccurity/main.conf;
 #   ...
 # }
+# Update site-confs/default.conf
+cd /config/nginx/site-confs/
+sed -E -i '/include \/config\/nginx\/authentik-server/a\
+\
+    # Comment the next two lines to disable the ModSecurity firewall for the default site
+    modsecurity on;\
+    modsecurity_rules_file \/config\/nginx\/modseccurity\/main.conf;' default.conf
 
-# From ModSecurity wiki Reference Manual v3, CRS docs
-# CRS docs note ModSecurityConfig must appear only once in the various nginx config files.
+# Update proxy-confs/*.conf.sample
+# cd /config/nginx/proxy-confs/
+# sed -E -i '/include \/config\/nginx\/authentik-server/a\
+# \
+#     # Comment the next two lines to disable the ModSecurity firewall for the default site
+#     modsecurity on;\
+#     modsecurity_rules_file \/config\/nginx\/modseccurity\/main.conf;' *.conf.sample
+
+# NB: This is the old syntax below. It changed to the above version, see https://github.com/SpiderLabs/ModSecurity/issues/1039
+# but it still appears in various online sources such as the ModSecurity wiki Reference Manual v3, CRS docs...
 # location / {
 #     ...
 #     ModSecurityEnabled on;
 #     ModSecurityConfig modsecurity.conf;
 #     ...
 # }
-
-# FFS!!!
 
 # The proxy-conf/*.sample files
 
