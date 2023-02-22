@@ -43,7 +43,7 @@ apk add bison curl curl-dev flex gawk geoip-dev libfuzzy2 libfuzzy2-dev libpcrec
 
 # OPTIONAL: Install tooling required for generating documentation for ModSecurity
 # The 'mandoc' and 'man-db' packages are in conflict. Alpine FAQ recommends mandoc
-apk add doxygen mandoc man-apropos man-pages texlive
+apk add doxygen mandoc mandoc-apropos man-pages texlive
 
 # Gleaned from the Linode instructions for compiling ModSecurity for Ubuntu 18.04 but AFAIK not needed here (no errors in ./build.sh  nor ./configure) 
 # iputils   : apk comment: IP Configuration Utilities (and Ping)
