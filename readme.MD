@@ -21,4 +21,4 @@ Enter the subdirectory `doc` and run the command `doxygen doxygen.cfg`. HTML doc
 ## TODO:
 - IMPORTANT: Enact checks for config files stored in the persistent storage volume that may have already been edited on the container's first run. 
 ## DONE:
-- Find `libinjection` and install it. It appears to have libInjection v3.9.2-46-gbfba51f installed already. I have no idea what package provides this.
+- Find `libinjection` and install it. It appears to have libInjection v3.9.2-46-gbfba51f installed already. I have no idea what package provides this. Update; it is a git submodule of the ModSecurity git repo.

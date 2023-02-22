@@ -1,27 +1,6 @@
 #!/bin/bash
 
 ################################################################################
-# apk package cache information
-################################################################################
-
-# Create a persistant local cache of apk packages to speed-up testing of
-# ModSecurity compilation inside the LinuxServer.io SWAG secure reverse proxy
-# docker container.
-# For docker compose, the persistent volume `- ./apk-cache:/etc/apk/cache` 
-# created in docker-compose.yml is automatically used for cached packages.
-
-# Other information regarding apk package caching:
-
-# https://wiki.alpinelinux.org/wiki/Local_APK_cache
-
-# Alpine has a script `setup-apkcache` that can be used to enable the cache but
-# a) it's not included in the SWAG container
-# b) I'm not sure if it's anything more than an ln command (I need to read it)
-
-# Manually create a link to a persistent local package cache dir:
-# ln -s /apk-cache /etc/apk/cache
-
-################################################################################
 # Build ModSecurity inside LinuxServer.io's SWAG HTTPS Reverse Proxy container
 ################################################################################
 
@@ -44,6 +23,8 @@ apk add bison curl curl-dev flex gawk geoip-dev libfuzzy2 libfuzzy2-dev libpcrec
 # OPTIONAL: Install tooling required for generating documentation for ModSecurity
 # The 'mandoc' and 'man-db' packages are in conflict. Alpine FAQ recommends mandoc
 apk add doxygen mandoc mandoc-apropos man-pages texlive
+docdir='/docs'
+mkdir -p "$docdir"
 
 # Gleaned from the Linode instructions for compiling ModSecurity for Ubuntu 18.04 but AFAIK not needed here (no errors in ./build.sh  nor ./configure) 
 # iputils   : apk comment: IP Configuration Utilities (and Ping)
@@ -115,20 +96,20 @@ git submodule update
 
 # Pre-build checks etc.
 ./build.sh
-./configure --docdir=/docs \
+./configure --docdir="$docdir" \
     --enable-doxygen-dot \
     --enable-doxygen-man \
     --enable-doxygen-rtf \
     --enable-doxygen-xml \
     --enable-doxygen-ps \
     --enable-doxygen-pdf \
-    --docdir=/docs \
-    --infodir=/docs/info \
-    --mandir=/docs/man \
-    --htmldir=/docs/html \
-    --dvidir=/docs/dvi \
-    --pdfdir=/docs/pdf \
-    --psdir=/docs/ps
+    --docdir="$docdir" \
+    --infodir="$docdir"/info \
+    --mandir="$docdir"/man \
+    --htmldir="$docdir"/html \
+    --dvidir="$docdir"/dvi \
+    --pdfdir="$docdir"/pdf \
+    --psdir="$docdir"/ps
 
 # ./configure --enable-parser-generation 
 # ./configure --enable-afl-fuzz
@@ -360,7 +341,6 @@ cd /config/nginx/site-confs/
 default_files=('default.conf.sample')
 if cmp -s default.conf default.conf.sample
 then
-    echo "default.conf and default.conf.sample are the same"
     default_files+=( 'default.conf' )
 fi
 
@@ -374,17 +354,17 @@ do
 done
 
 # # Update proxy-confs/*.conf.sample
-cd /config/nginx/proxy-confs/
-for file in *.conf.sample
-do
-    service_name=$(echo $file | sed "s/\.sub.*\.conf\.sample//")
-    echo "Working on service name: $service_name"
-    sed -E -i '/include \/config\/nginx\/authentik-server/a\
-    \
-    # Comment the next two lines to disable the ModSecurity firewall for this reverse proxied service\
-    modsecurity on;\
-    modsecurity_rules_file \/config\/nginx\/modsecurity\/main.conf;' "$file"
-done
+# cd /config/nginx/proxy-confs/
+# for file in *.conf.sample
+# do
+#     service_name=$(echo $file | sed "s/\.sub.*\.conf\.sample//")
+#     echo "Working on service name: $service_name"
+#     sed -E -i '/include \/config\/nginx\/authentik-server/a\
+#     \
+#     # Comment the next two lines to disable the ModSecurity firewall for this reverse proxied service\
+#     modsecurity on;\
+#     modsecurity_rules_file \/config\/nginx\/modsecurity\/main.conf;' "$file"
+# done
 
 # NB: This is the old syntax below. It changed to the above version, see https://github.com/SpiderLabs/ModSecurity/issues/1039
 # but it still appears in various online sources such as the ModSecurity wiki Reference Manual v3, CRS docs...
@@ -398,3 +378,4 @@ done
 ################################################################################
 # Download the GeoIP Location Database 
 ################################################################################
+# TODO: Find out which database (country, city etc)
