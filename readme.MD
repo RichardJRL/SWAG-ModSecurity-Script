@@ -14,6 +14,25 @@
 * https://coreruleset.org/doc
 * https://coreruleset.org/20211222/talking-about-modsecurity-and-the-new-coraza-waf/
 
+# apk package cache information
+
+Create a persistant local cache of apk packages to speed-up testing of
+ModSecurity compilation inside the LinuxServer.io SWAG secure reverse proxy
+docker container.
+For docker compose, the persistent volume `- ./apk-cache:/etc/apk/cache` 
+created in docker-compose.yml is automatically used for cached packages.
+
+Other information regarding apk package caching:
+
+https://wiki.alpinelinux.org/wiki/Local_APK_cache
+
+Alpine has a script `setup-apkcache` that can be used to enable the cache but
+a) it's not included in the SWAG container
+b) I'm not sure if it's anything more than an ln command (I need to read it)
+
+Manually create a link to a persistent local package cache dir:
+`ln -s /apk-cache /etc/apk/cache`
+
 ## ModSecurity Documentation Generation
 Nothing is working regarding documentation generation or installation in the `configure`/`make`/`make install` pipeline. 
 Enter the subdirectory `doc` and run the command `doxygen doxygen.cfg`. HTML documentation will then be generated in an `html` subdirectory.
