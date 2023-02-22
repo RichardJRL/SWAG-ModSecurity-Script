@@ -2,7 +2,8 @@
 version: "2.1"
 services:
   swag:
-    image: lscr.io/linuxserver/swag:latest
+    # image: lscr.io/linuxserver/swag:latest
+    image: lscr.io/linuxserver/nginx:latest
     container_name: swag
     cap_add:
       - NET_ADMIN
@@ -10,7 +11,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/London
-      - URL=yourdomain.lan
+      # - URL=yourdomain.lan
       # - VALIDATION=http
       # - SUBDOMAINS=www, #optional
       # - CERTPROVIDER= #optional
@@ -25,7 +26,7 @@ services:
       - ./swag-scripts:/scripts
       - ./apk-cache:/etc/apk/cache
       # - ./ModSecurity:/opt/ModSecurity
-    # ports:
-    #   - 443:443
-    #   - 80:80 #optional
+    ports:
+      - 4443:443
+      - 480:80 #optional
     restart: unless-stopped
