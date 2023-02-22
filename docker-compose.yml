@@ -10,8 +10,8 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/London
-      # - URL=yourdomain.url
-      - VALIDATION=http
+      - URL=yourdomain.lan
+      # - VALIDATION=http
       # - SUBDOMAINS=www, #optional
       # - CERTPROVIDER= #optional
       # - DNSPLUGIN=cloudflare #optional
