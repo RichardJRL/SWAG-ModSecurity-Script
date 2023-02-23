@@ -21,10 +21,13 @@ apk add bison curl curl-dev flex gawk geoip-dev libfuzzy2 libfuzzy2-dev libpcrec
 # apk add valgrind
 
 # OPTIONAL: Install tooling required for generating documentation for ModSecurity
-# The 'mandoc' and 'man-db' packages are in conflict. Alpine FAQ recommends mandoc
-apk add doxygen mandoc mandoc-apropos man-pages texlive
-docdir='/docs'
-mkdir -p "$docdir"
+# The 'mandoc' and 'man-db' packages are in conflict. Alpine FAQ recommends mandoc.
+# NB: `make` does not appear to generate ANY documentation. Enter `/opt/ModSecurity/doc` and  
+# run `doxygen doxygen.cfg` to generate HTML & LaTeX documentation in a subdirectory there.
+# NB: also MUST subsequently run ./configure with various documentation options specified.
+# apk add doxygen mandoc mandoc-apropos man-pages sqlite texlive
+# docdir='/docs'
+# mkdir -p "$docdir"
 
 # Gleaned from the Linode instructions for compiling ModSecurity for Ubuntu 18.04 but AFAIK not needed here (no errors in ./build.sh  nor ./configure) 
 # iputils   : apk comment: IP Configuration Utilities (and Ping)
@@ -96,24 +99,37 @@ git submodule update
 
 # Pre-build checks etc.
 ./build.sh
-./configure --docdir="$docdir" \
-    --enable-doxygen-dot \
-    --enable-doxygen-man \
-    --enable-doxygen-rtf \
-    --enable-doxygen-xml \
-    --enable-doxygen-ps \
-    --enable-doxygen-pdf \
-    --docdir="$docdir" \
-    --infodir="$docdir"/info \
-    --mandir="$docdir"/man \
-    --htmldir="$docdir"/html \
-    --dvidir="$docdir"/dvi \
-    --pdfdir="$docdir"/pdf \
-    --psdir="$docdir"/ps
+# Run configure without any specific options. Run `./configure --help` for a full list of options.
+# ./configure
 
+#/ Run configure with the GNU linker
+./configure --with-gnu-ld
+
+# TODO: Find out what --enable-parser-generation does.
 # ./configure --enable-parser-generation 
+
+# Configure wiht support for testing ModSecurity with American Fuzzy Lop plus plus (afl++) support
 # ./configure --enable-afl-fuzz
+
+# Configure with support for Valgrind
 # ./configure --enable-valgrind
+
+# Configure with support for documentation generation (NB: doesn't actually generate any documentation!)
+# ./configure --docdir="$docdir" \
+#     --enable-doxygen-dot \
+#     --enable-doxygen-man \
+#     --enable-doxygen-rtf \
+#     --enable-doxygen-xml \
+#     --enable-doxygen-ps \
+#     --enable-doxygen-pdf \
+#     --docdir="$docdir" \
+#     --infodir="$docdir"/info \
+#     --mandir="$docdir"/man \
+#     --htmldir="$docdir"/html \
+#     --dvidir="$docdir"/dvi \
+#     --pdfdir="$docdir"/pdf \
+#     --psdir="$docdir"/ps
+
 
 # ##Configure output of note:
 # configure: LMDB is disabled by default.
@@ -135,22 +151,6 @@ git submodule update
 #    + Treating pm operations as critical section    ....disabled
 
 # Notes on configure output
-
-# afl fuzzer: apk comment: Fuzzer relying on genetic algorithms instead of brute force
-#           : No mention of this in alipine's nginx -V configure options.
-#           : No mention of this in the compilation recipes page on the ModSecurity Wiki
-#           : It is enabled with a configure option `--enable-afl-fuzz`, 
-#           : after doing so, the following warning appears at the end of the ./configure output:
-#           : WARNING: afl fuzzer was enabled. Make sure you are using the
-#           : 'afl-clang-fast' as the compiler, otherwise the compilation
-#           : will fail.
-#           : You can set the compiler using:
-#           : $ export CXX=afl-clang-fast++ 
-#           : $ export CC=afl-clang-fast 
-#           : It also needs the package compiler-rt installed otherwise compilation fails as it cannot find
-#           : the file /usr/lib/clang/15.0.7/lib/linux/libclang_rt.asan_static-x86_64.a . Found it thanks to:
-#           : https://bugzilla.redhat.com/show_bug.cgi?id=949489 describes the missing libclang_rt.asan_static-x86_64.a as a bug in Red Hat, suggests installing compiler-rt package. IT WORKED!
-#           : Also see https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.llvm.md
 
 # lmdb      : apk comment: Lightning Memory-Mapped Database
 #           : Centos, Amazon & Ubuntu compilation recipes on the ModSecurity wiki all use this.
@@ -194,11 +194,11 @@ NGINX_CONFIGURATION_ARGS=$(nginx -V 2> >(sed -n 's/configure arguments: //p'))
 
 make modules
 mkdir -p /etc/nginx/modules
-# cp objs/ngx_http_modsecurity_module.so /etc/nginx/modules
 # In the swag container, the path to existing nginx modules is /usr/lib/nginx/modules/
 # In the swag container /etc/nginx/modules contains only numbered .conf files which
 # are one-liners that serve to load the nginx module from the /usr/lib/nginx/modules/ directory
 # e.g. load_module "modules/ngx_http_perl_module.so";
+# NB: This module has also been `make install`ed to `/var/lib/nginx/modules/`
 cp objs/ngx_http_modsecurity_module.so /usr/lib/nginx/modules/
 echo 'load_module "modules/ngx_http_modsecurity_module.so";' > /etc/nginx/modules/10_http_modsecurity.conf
 # TODO: Check for a modules-enabled directory...
@@ -346,7 +346,10 @@ fi
 
 for file in "${default_files[@]}"
 do
-    sed -E -i '/include \/config\/nginx\/authentik-server/a\
+    # SWAG:
+    # sed -E -i '/include \/config\/nginx\/authentik-server/a\
+    # nginx:
+    sed -E -i '/server_name /a\
     \
     # Comment the next two lines to disable the ModSecurity firewall for the default site\
     modsecurity on;\
