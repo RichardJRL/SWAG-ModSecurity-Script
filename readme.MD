@@ -16,7 +16,7 @@ There are a couple of things I can still try.
 1. Build the ModSecurity Nginx connector against Alpine's version of Nginx, instead of the official Nginx source.
 2. Set up a proper Alpine package build environment in an Alpine virtual machine and build ModSecurity and its NGINX connector module in there. This is a project in and of itself and will be continued elsewhere.
 
-To be continued... but despite the failure, I'm publishing this repository to make the information I've learned along the way available to others. I'll update if and when I manage to get ModSecurity, the connector and NGINX playing nicely in an Alpine virtual machine.
+To be continued... but despite the failure, I'm publishing this repository to make the information I've learned along the way available to others. It does contain a list of the dependencies that Alpine requires to compile ModSecurity and working installation instructions, insofar as everything is where it should be even if NGINX doesn't like the binary. I'll update if and when I manage to get ModSecurity, the connector and NGINX playing nicely in an Alpine virtual machine.
 ## Tutorials
 - https://www.linode.com/docs/guides/securing-nginx-with-modsecurity/
 - https://www.nginx.com/blog/compiling-and-installing-modsecurity-for-open-source-nginx/
