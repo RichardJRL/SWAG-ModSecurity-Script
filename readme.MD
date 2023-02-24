@@ -221,8 +221,8 @@ ngx_http_perl_module.so: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV),
   - DONE: Did not work.
 - TODO: Read the bottom comment here (from 2020!). Claims the connector is NOT required any more! https://github.com/SpiderLabs/ModSecurity-nginx/issues/159 The link referenced is now 404 but the Internet Archive has a version: https://web.archive.org/web/20201116083604/https://alfaexploit.com/readArticle/345 (Spanish?). The gist is that since June 2020, the connector has been built-in to NGINX and as long as NGINX itself is compiled with support for ModSecurity, then only the ModSecurity module is required along with the few lines to include it in `nginx.conf`. Article claims you can use use `make config` for a graphical assistant for what modules to include in an NGINX build. ModSecurity should appear there amongst all the other modules listed if this is still the case. This is not the case on alpine now. `make: *** No rule to make target 'config'.  Stop.`, trying `./configure --help`. Not in there either, as suspected. This article appears to be a dead-end and refers to a change to NGINX that has since been reversed. I.e. the connector is no longer incorporated into NGINX now.
 - TODO: Try compiling the connector module with the alpine version of NGINX instead of the official NGINX version. It may be patched?
-
-## TODO:
+## Task List
+### TODO:
 - IMPORTANT: Enact checks for config files stored in the persistent storage volume that may have already been edited on the container's first run. 
-## DONE:
+### DONE:
 - Find `libinjection` and install it. It appears to have libInjection v3.9.2-46-gbfba51f installed already. I have no idea what package provides this. Update; it is a git submodule of the ModSecurity git repo.
