@@ -1,10 +1,10 @@
 # Documentation for Compiling ModSecurity for Nginx on Alpine Linux
 ## IMPORTANT: READ THIS SECTION
-This was a side-project of mine to see if I could get the Web Application Firewall (WAF) ModSecurity working on LinuxServer.io's Secure Web Application Gateway (SWAG) Docker container which uses nginx as its web server.
+This was a side-project of mine to see if I could get the Web Application Firewall (WAF) ModSecurity working on LinuxServer.io's Secure Web Application Gateway (SWAG) Docker container which uses NGINX as its web server.
 
 The project consists of a docker compose file and a bash script.
 
-The docker compose file is to create a container with nginx already setup in it. Originally this was LinuxServer.io's SWAG container but I changed it to their more basic nginx container to avoid being pestered to create SSL certificates for domains I didn't need yet. It mounts one persistent volume as an apk package cache (because I have terrible broadband) and another to hold the script I use to install ModSecurity in the container.
+The docker compose file is to create a container with NGINX already setup in it. Originally this was LinuxServer.io's SWAG container but I changed it to their more basic NGINX container to avoid being pestered to create SSL certificates for domains I didn't need yet. It mounts one persistent volume as an apk package cache (because I have terrible broadband) and another to hold the script I use to install ModSecurity in the container.
 
 **TLDR:** It always fails with the error:
 ```
@@ -14,9 +14,9 @@ And nothing I've tried can solve the binary compatibility error.
 
 There are a couple of things I can still try.
 1. Build the ModSecurity Nginx connector against Alpine's version of Nginx, instead of the official Nginx source.
-2. Set up a proper Alpine package build environment in an Alpine virtual machine and build ModSecurity and its nginx connector module in there. This is a project in and of itself and will be continued elsewhere.
+2. Set up a proper Alpine package build environment in an Alpine virtual machine and build ModSecurity and its NGINX connector module in there. This is a project in and of itself and will be continued elsewhere.
 
-To be continued... but despite the failure, I'm publishing this repository to make the information I've learned along the way available to others. I'll update if and when I manage to get ModSecurity, the connector and nginx playing nicely in an Alpine virtual machine.
+To be continued... but despite the failure, I'm publishing this repository to make the information I've learned along the way available to others. I'll update if and when I manage to get ModSecurity, the connector and NGINX playing nicely in an Alpine virtual machine.
 ## Tutorials
 - https://www.linode.com/docs/guides/securing-nginx-with-modsecurity/
 - https://www.nginx.com/blog/compiling-and-installing-modsecurity-for-open-source-nginx/
@@ -117,11 +117,11 @@ Gleaned from the Linode instructions for compiling ModSecurity for Ubuntu 18.04 
 - NOTES: Only the CentOS and AWS Linux build recipies in the ModSecurity Wiki include this as a named dependency.
 - TODO: Check if installed by default before running this script
 - ANSWER: libxslt is installed now, libxslt-dev is not.
-        - nginx is compiled with xslt support (ref: nginx -V)
+        - NGINX is compiled with xslt support (ref: `nginx -V`)
 ### libgd
 - apk comment: Library for the dynamic creation of images by programmers (libraries)
 - URL: https://libgd.github.io/
-- NOTES: Only the CentOS and AWS Linux build recipies in the ModSecurity Wiki include this as a named dependency.
+- NOTES: Only the CentOS and AWS Linux build recipes in the ModSecurity Wiki include this as a named dependency.
 - TODO: Check if installed by default before running this script
             ANSWER: Installed now but...
 ## ModSecurity Configuration & Build
@@ -130,11 +130,11 @@ Gleaned from the Linode instructions for compiling ModSecurity for Ubuntu 18.04 
 ### afl fuzzer
 What is it?
 - `apk info` comment: Fuzzer relying on genetic algorithms instead of brute force.
-- No mention of this in alipine's nginx -V configure options.
+- No mention of this in Alpine's `nginx -V` configure options.
 - No mention of this in the compilation recipes page on the ModSecurity Wiki
 - It is enabled with a configure option `--enable-afl-fuzz`, after doing so, the following warning appears at the end of the ./configure output:
 ```
-WARNING: afl fuzzer was enabled. Make sure you are using the 'afl-clang-fast' as the compiler, therwise the compilation will fail.
+WARNING: afl fuzzer was enabled. Make sure you are using the 'afl-clang-fast' as the compiler, otherwise the compilation will fail.
 You can set the compiler using:
 $ export CXX=afl-clang-fast++ 
 $ export CC=afl-clang-fast 
@@ -169,11 +169,11 @@ Notes on packages appearing in configure output:
 ### lmdb
 - apk comment: Lightning Memory-Mapped Database
 - Centos, Amazon & Ubuntu compilation recipes on the ModSecurity wiki all use this.
-- It isn't mentioned in the nginx -V configure options
+- It isn't mentioned in the `nginx -V` configure options
 - Appears disabled by default despite lmdb and lmdb-dev being installed
 
 ### pcre2
-- pcre2 support is specifically disabled in alpine's nginx configure options, uses pcre instead
+- pcre2 support is specifically disabled in alpine's NGINX configure options, uses pcre instead
 
 ### SSDEEP
 - Not found despite ssdeep and ssdeep-static being installed.
@@ -182,7 +182,7 @@ Notes on packages appearing in configure output:
 Nothing is working regarding documentation generation or installation in the `configure`/`make`/`make install` pipeline, regardless of the options `./configure` is run with.
 Enter the subdirectory `doc` and run the command `doxygen doxygen.cfg`. HTML & LaTeX documentation will then be generated in an `html` subdirectory.
 
-## ModSecurity Connector for nginx Configuration & Build
+## ModSecurity Connector for NGINX Configuration & Build
 ### Choice lines from ./configure output
 ```
 dirname: unrecognized option '--sbin-path=/usr/sbin/nginx'
@@ -199,7 +199,7 @@ Configuration summary
 nginx: [emerg] module "/var/lib/nginx/modules/ngx_http_modsecurity_module.so" is not binary compatible in /etc/nginx/modules/10_http_modsecurity.conf:1
 ```
 Oh...
-This refers to the nginx connector module for ModSecurity - not ModSecurity itself.
+This refers to the NGINX connector module for ModSecurity - not ModSecurity itself.
 ### Clues
 ```
 root@e09d50388b62:/usr/lib/nginx/modules# file ngx_http_modsecurity_module.so
@@ -219,8 +219,8 @@ ngx_http_perl_module.so: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV),
   - DONE: Did not work.
 - TODO: Try  `--with-cc-opt='-DNGX_HTTP_HEADERS'` as per https://github.com/apache/incubator-pagespeed-ngx/issues/1440
   - DONE: Did not work.
-- TODO: Read the bottom comment here (from 2020!). Claims the connector is NOT required any more! https://github.com/SpiderLabs/ModSecurity-nginx/issues/159 The link referenced is now 404 but the Internet Archive has a version: https://web.archive.org/web/20201116083604/https://alfaexploit.com/readArticle/345 (Spanish?). The gist is that since June 2020, the connector has been built-in to nginx and as long as nginx itself is compiled with support for ModSecurity, then only the ModSecurity module is required along with the few lines to include it in `nginx.conf`. Article claims you can use use `make config` for a graphical assistant for what modules to include in an nginx build. ModSecurity should appear there amongst all the other modules listed if this is still the case. This is not the case on alpine now. `make: *** No rule to make target 'config'.  Stop.`, trying `./configure --help`. Not in there either, as suspected. This article appears to be a dead-end and refers to a change to nginx that has since been reversed. I.e. the connector is no longer incorporated into nginx now.
-- TODO: Try compiling the connector module with the alpine version of nginx instead of the official nginx version. It may be patched?
+- TODO: Read the bottom comment here (from 2020!). Claims the connector is NOT required any more! https://github.com/SpiderLabs/ModSecurity-nginx/issues/159 The link referenced is now 404 but the Internet Archive has a version: https://web.archive.org/web/20201116083604/https://alfaexploit.com/readArticle/345 (Spanish?). The gist is that since June 2020, the connector has been built-in to NGINX and as long as NGINX itself is compiled with support for ModSecurity, then only the ModSecurity module is required along with the few lines to include it in `nginx.conf`. Article claims you can use use `make config` for a graphical assistant for what modules to include in an NGINX build. ModSecurity should appear there amongst all the other modules listed if this is still the case. This is not the case on alpine now. `make: *** No rule to make target 'config'.  Stop.`, trying `./configure --help`. Not in there either, as suspected. This article appears to be a dead-end and refers to a change to NGINX that has since been reversed. I.e. the connector is no longer incorporated into NGINX now.
+- TODO: Try compiling the connector module with the alpine version of NGINX instead of the official NGINX version. It may be patched?
 
 ## TODO:
 - IMPORTANT: Enact checks for config files stored in the persistent storage volume that may have already been edited on the container's first run. 

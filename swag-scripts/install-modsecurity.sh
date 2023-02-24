@@ -79,7 +79,7 @@ make install
 cd /opt
 git clone --depth=1 https://github.com/SpiderLabs/ModSecurity-nginx
 
-# NB: nginx version number is output to STDERR not STDOUT
+# NB: NGINX version number is output to STDERR not STDOUT
 NGINX_VERSION=nginx-$(nginx -v 2> >(awk -F '/' '{ print $2 }'))
 wget "http://nginx.org/download/$NGINX_VERSION.tar.gz"
 tar -xvzmf "$NGINX_VERSION.tar.gz"
@@ -94,9 +94,9 @@ NGINX_CONFIGURATION_ARGS=$(echo $NGINX_CONFIGURATION_ARGS | sed -E 's/--add-dyna
 
 make modules
 mkdir -p /etc/nginx/modules
-# In the swag container, the path to existing nginx modules is /usr/lib/nginx/modules/
+# In the swag container, the path to existing NGINX modules is /usr/lib/nginx/modules/
 # In the swag container /etc/nginx/modules contains only numbered .conf files which
-# are one-liners that serve to load the nginx module from the /usr/lib/nginx/modules/ directory
+# are one-liners that serve to load the NGINX module from the /usr/lib/nginx/modules/ directory
 # e.g. load_module "modules/ngx_http_perl_module.so";
 # NB: This module has also been `make install`ed to `/var/lib/nginx/modules/`
 strip objs/ngx_http_modsecurity_module.so
@@ -223,9 +223,9 @@ touch /config/nginx/modsecurity/main.conf
     echo 'include /config/nginx/modsecurity-crs/plugins/*.conf'
 } >> /config/nginx/modsecurity/main.conf
 
-# Include the relevant nginx configuration directives to turn ModSecurity on and provide a path to the rules files
+# Include the relevant NGINX configuration directives to turn ModSecurity on and provide a path to the rules files
 # See: https://github.com/SpiderLabs/ModSecurity-nginx#usage
-# Both the `modsecurity` and `modsecurity_rules_file` can have `http`, `server` or `location` context in nginx conf files.
+# Both the `modsecurity` and `modsecurity_rules_file` can have `http`, `server` or `location` context in NGINX conf files.
 # `server` level chosen here due to SWAG's breakdown of conf files into individual proxy-confs that operate at the server level.
 # server {
 #   ...
