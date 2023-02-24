@@ -1,4 +1,22 @@
 # Documentation for Compiling ModSecurity for Nginx on Alpine Linux
+## IMPORTANT: READ THIS SECTION
+This was a side-project of mine to see if I could get the Web Application Firewall (WAF) ModSecurity working on LinuxServer.io's Secure Web Application Gateway (SWAG) Docker container which uses nginx as its web server.
+
+The project consists of a docker compose file and a bash script.
+
+The docker compose file is to create a container with nginx already setup in it. Originally this was LinuxServer.io's SWAG container but I changed it to their more basic nginx container to avoid being pestered to create SSL certificates for domains I didn't need yet. It mounts one persistent volume as an apk package cache (because I have terrible broadband) and another to hold the script I use to install ModSecurity in the container.
+
+**TLDR:** It always fails with the error:
+```
+nginx: [emerg] module "/var/lib/nginx/modules/ngx_http_modsecurity_module.so" is not binary compatible in /etc/nginx/modules/10_http_modsecurity.conf:1
+```
+And nothing I've tried can solve the binary compatibility error.
+
+There are a couple of things I can still try.
+1. Build the ModSecurity Nginx connector against Alpine's version of Nginx, instead of the official Nginx source.
+2. Set up a proper Alpine package build environment in an Alpine virtual machine and build ModSecurity and its nginx connector module in there. This is a project in and of itself and will be continued elsewhere.
+
+To be continued... but despite the failure, I'm publishing this repository to make the information I've learned along the way available to others. I'll update if and when I manage to get ModSecurity, the connector and nginx playing nicely in an Alpine virtual machine.
 ## Tutorials
 - https://www.linode.com/docs/guides/securing-nginx-with-modsecurity/
 - https://www.nginx.com/blog/compiling-and-installing-modsecurity-for-open-source-nginx/
@@ -125,6 +143,41 @@ $ export CC=afl-clang-fast
 https://bugzilla.redhat.com/show_bug.cgi?id=949489 describes the missing `libclang_rt.asan_static-x86_64.a` as a bug in Red Hat, suggests installing `compiler-rt` package. IT WORKED!
 - Also see https://github.com/AFLplusplus/AFLplusplus/blob/stable/instrumentation/README.llvm.md
 
+### ModSecurity `./configure` Output
+
+Selected configure output for further investigation:
+```
+configure: LMDB is disabled by default.
+checking if libcurl is linked with gnutls... no
+checking for string... no
+checking for iostream... no
+checking for dlltool... no
+checking for sysroot... no
+checking for mt... no
+checking if : is a manifest tool... no
+checking if gcc supports -fno-rtti -fno-exceptions... no
+checking whether -lc should be explicitly linked in... no
+checking for shl_load... no
+checking for shl_load in -ldld... no
+checking whether a statically linked program can dlopen itself... no
+
+   + LMDB                                          ....disabled
+   + PCRE2                                          ....disabled
+   + Treating pm operations as critical section    ....disabled
+```
+Notes on packages appearing in configure output:
+### lmdb
+- apk comment: Lightning Memory-Mapped Database
+- Centos, Amazon & Ubuntu compilation recipes on the ModSecurity wiki all use this.
+- It isn't mentioned in the nginx -V configure options
+- Appears disabled by default despite lmdb and lmdb-dev being installed
+
+### pcre2
+- pcre2 support is specifically disabled in alpine's nginx configure options, uses pcre instead
+
+### SSDEEP
+- Not found despite ssdeep and ssdeep-static being installed.
+- It requires libfuzzy2-dev instead - which appears to be an alternative & preferred implementation.
 ## ModSecurity Documentation Generation
 Nothing is working regarding documentation generation or installation in the `configure`/`make`/`make install` pipeline, regardless of the options `./configure` is run with.
 Enter the subdirectory `doc` and run the command `doxygen doxygen.cfg`. HTML & LaTeX documentation will then be generated in an `html` subdirectory.
